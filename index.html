@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>変換 · Comic &amp; Book Converter</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap">
+<style>
+:root{--deep:#5f005f;--paper:#66669a;--paper2:#9a94cf;--ink:#fff;--black:#000;box-sizing:border-box}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--deep);color:var(--ink);font-family:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho",Georgia,"Times New Roman",serif;
+ background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0 1px,transparent 1px 4px)}
+.torn{position:fixed;left:0;right:0;background:var(--paper);z-index:2;background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.04) 0 1px,transparent 1px 3px)}
+.torn.t{top:0;height:15vh}.torn.b{bottom:0;height:13vh}
+nav{position:fixed;top:0;left:0;right:0;z-index:5;height:calc(10vh + env(safe-area-inset-top,0px));display:flex;justify-content:center;align-items:center;gap:clamp(.9rem,3vw,2rem);padding:env(safe-area-inset-top,0px) 1rem 0;flex-wrap:nowrap;white-space:nowrap}
+nav span{font-size:1.1rem;opacity:.85}
+.chip{font:inherit;font-size:1.15rem;color:var(--ink);background:none;border:0;padding:0;cursor:pointer;letter-spacing:.06em}
+.chip.sel{color:var(--black);font-weight:700}
+.chip:disabled{opacity:.35;cursor:not-allowed}
+main{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:15vh 5vw 13vh;gap:1.2vh}
+.rom{font-style:italic;letter-spacing:.35em;font-size:clamp(.9rem,2.2vh,1.5rem);margin:0}
+.big{font-size:clamp(3.2rem,13vh,8rem);line-height:1;margin:0;font-weight:700;letter-spacing:.05em}
+.drop{width:min(560px,88vw);height:clamp(5.5rem,17vh,9rem);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.2rem;cursor:pointer;
+ border:2px dashed var(--paper2);margin-top:1.5vh;padding:0 1rem}
+.drop.over{background:rgba(154,148,207,.25)}
+.drop b{font-size:1.5rem}.drop small{opacity:.85}
+#fname{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.go{font:inherit;font-size:1.2rem;font-weight:700;background:var(--paper2);color:var(--black);border:0;padding:.7rem 2.2rem;cursor:pointer;letter-spacing:.1em;margin-top:1vh}
+.go:disabled{opacity:.4;cursor:not-allowed}
+.bar{width:min(560px,88vw);height:6px;background:rgba(0,0,0,.3);display:none}
+.bar div{height:100%;width:0;background:var(--ink);transition:width .2s}
+#msg{font-style:italic;min-height:1.4em;font-size:1rem}
+#dl{display:none;color:var(--black);background:var(--paper2);padding:.6rem 1.4rem;text-decoration:none;font-weight:700}
+.foot{position:fixed;left:0;right:0;bottom:0;height:8vh;z-index:5;display:flex;align-items:center;justify-content:center;padding:0 1rem env(safe-area-inset-bottom,0px);text-align:center;font-size:clamp(.75rem,1.9vh,.95rem);font-style:italic;letter-spacing:.04em}
+main{overflow-y:auto;justify-content:safe center;-webkit-overflow-scrolling:touch}
+#msg{max-width:min(560px,88vw);overflow-wrap:anywhere}
+#dl{max-width:88vw;overflow-wrap:anywhere}
+.chip{padding:.5rem .25rem}
+@supports(height:1dvh){.torn.t{height:15dvh}.torn.b{height:max(13dvh,3.6rem)}nav{height:calc(10dvh + env(safe-area-inset-top,0px))}main{padding:15dvh 5vw max(13dvh,3.6rem)}.foot{height:max(8dvh,2.6rem)}.big{font-size:clamp(3rem,13dvh,8rem)}.drop{height:clamp(5.5rem,17dvh,9rem)}}
+@media(max-width:380px){nav span,.chip{font-size:.95rem}nav{gap:.8rem}}
+@media(max-height:480px){.rom{display:none}.big{font-size:2.4rem!important}.drop{height:4rem!important;margin-top:0}.drop b{font-size:1.1rem}.drop small{display:none}.go{padding:.5rem 1.6rem;font-size:1rem;margin-top:0}main{gap:.5rem}#msg{font-size:.85rem}.foot{font-size:.75rem}}
+@media(min-width:1600px){.drop,.bar,#msg{width:min(680px,60vw)}}
+</style>
+</head>
+<body>
+<div class="torn t" id="tt"></div><div class="torn b" id="tb"></div>
+<nav><span>Convert to</span><button class="chip" data-f="cbz">CBZ</button><button class="chip" data-f="epub">EPUB</button><button class="chip" data-f="pdf">PDF</button></nav>
+<footer class="foot">Convert CBZ, EPUB and PDF files into one another, right in your browser.</footer>
+<main>
+  <p class="rom">hen.&nbsp;&nbsp;&nbsp;kan.</p>
+  <h1 class="big">変換</h1>
+  <p class="rom">kon. bā. tā.</p>
+  <div class="drop" id="drop"><b id="fname">Drop a .cbz, .epub or .pdf</b><small>or tap to choose a file</small>
+    <input id="file" type="file" accept=".cbz,.zip,.epub,.pdf" hidden></div>
+  <button class="go" id="go" disabled>Convert</button>
+  <div class="bar" id="bar"><div></div></div>
+  <div id="msg"></div>
+  <a id="dl">Download</a>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+// torn paper edges
+function jag(el,top){const n=70,p=[];for(let i=0;i<=n;i++){const x=i/n*100,y=top?72+Math.random()*24+Math.sin(i/6)*4:4+Math.random()*24-Math.sin(i/6)*4;p.push([x,y])}
+ el.style.clipPath=top?`polygon(0 0,100% 0,${p.reverse().map(a=>a[0]+'% '+a[1]+'%').join(',')})`:`polygon(0 100%,${p.map(a=>a[0]+'% '+a[1]+'%').join(',')},100% 100%)`}
+function tearTag(el){const p=[];for(let i=0;i<=30;i++)p.push([i/30*100,i%2?Math.random()*14:Math.random()*8]);
+ const q=[];for(let i=30;i>=0;i--)q.push([i/30*100,100-Math.random()*14]);el.style.clipPath=`polygon(${p.concat(q).map(a=>a[0]+'% '+a[1]+'%').join(',')})`}
+jag($('#tt'),true);jag($('#tb'),false);
+// scroll highlight
+const links=[...document.querySelectorAll('nav a')];
+addEventListener('scroll',()=>{let c=links[0];for(const a of links){const t=document.querySelector(a.getAttribute('href'));if(t&&t.getBoundingClientRect().top<innerHeight*.4)c=a}links.forEach(a=>a.classList.toggle('on',a===c))});
+
+// state
+let file=null,src=null,target=null;
+const chips=[...document.querySelectorAll('.chip')],go=$('#go');
+const msg=t=>$('#msg').textContent=t, prog=v=>{$('#bar').style.display='block';$('#bar div').style.width=(v*100)+'%'};
+function refresh(){chips.forEach(c=>{c.disabled=c.dataset.f===src;c.classList.toggle('sel',c.dataset.f===target)});go.disabled=!(file&&target&&target!==src)}
+function pick(f){if(!f)return;const e=f.name.split('.').pop().toLowerCase();src=e==='zip'?'cbz':e;
+ if(!['cbz','epub','pdf'].includes(src)){msg('Unsupported file type.');file=null;src=null;refresh();return}
+ file=f;if(target===src)target=null;$('#fname').textContent=f.name;$('#dl').style.display='none';msg('');refresh()}
+$('#drop').onclick=()=>$('#file').click();
+$('#file').onchange=e=>pick(e.target.files[0]);
+['dragover','dragenter'].forEach(k=>$('#drop').addEventListener(k,e=>{e.preventDefault();$('#drop').classList.add('over')}));
+['dragleave','drop'].forEach(k=>$('#drop').addEventListener(k,e=>{e.preventDefault();$('#drop').classList.remove('over')}));
+$('#drop').addEventListener('drop',e=>pick(e.dataTransfer.files[0]));
+chips.forEach(c=>c.onclick=()=>{target=c.dataset.f;refresh()});
+
+// helpers
+const nat=(a,b)=>a.localeCompare(b,undefined,{numeric:true});
+const IMG=/\.(jpe?g|png|webp|gif|bmp)$/i;
+const toCanvasBlob=(cv)=>new Promise(r=>cv.toBlob(r,'image/jpeg',.9));
+async function page(blob){const bm=await createImageBitmap(blob);let b=blob;
+ if(blob.type!=='image/jpeg'){const cv=document.createElement('canvas');cv.width=bm.width;cv.height=bm.height;const x=cv.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,bm.width,bm.height);x.drawImage(bm,0,0);b=await toCanvasBlob(cv)}
+ return{blob:b,w:bm.width,h:bm.height}}
+async function textPages(text){const out=[],W=1000,H=1400,L=44;const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');x.font='28px serif';
+ const lines=[];text.split(/\n+/).forEach(par=>{let l='';par.split(/\s+/).forEach(w=>{if(x.measureText(l+' '+w).width>W-120){lines.push(l);l=w}else l+=' '+w});lines.push(l.trim(),'')});
+ for(let i=0;i<lines.length;i+=L){x.fillStyle='#fff';x.fillRect(0,0,W,H);x.fillStyle='#111';lines.slice(i,i+L).forEach((s,j)=>x.fillText(s,60,80+j*31));out.push(await page(await toCanvasBlob(cv)))}return out}
+
+// readers
+async function readCBZ(f){const z=await JSZip.loadAsync(f);const names=Object.keys(z.files).filter(n=>!z.files[n].dir&&IMG.test(n)&&!n.includes('__MACOSX')).sort(nat);const out=[];
+ for(let i=0;i<names.length;i++){out.push(await page(await z.files[names[i]].async('blob')));prog(i/names.length*.6);}return out}
+async function readEPUB(f){const z=await JSZip.loadAsync(f);const dp=new DOMParser();const rd=async p=>dp.parseFromString(await z.file(p).async('string'),'text/xml');
+ const opfPath=(await rd('META-INF/container.xml')).querySelector('rootfile').getAttribute('full-path');const dir=opfPath.includes('/')?opfPath.replace(/[^/]*$/,''):'';
+ const opf=await rd(opfPath);const man={};opf.querySelectorAll('manifest > item').forEach(i=>man[i.getAttribute('id')]=i.getAttribute('href'));
+ const res=(base,h)=>decodeURIComponent(new URL(h,'http://x/'+base).pathname.slice(1));
+ const imgs=[];let text='';
+ for(const ref of opf.querySelectorAll('spine > itemref')){const h=man[ref.getAttribute('idref')];if(!h)continue;const p=res(dir,h);const fl=z.file(p);if(!fl)continue;
+  const doc=dp.parseFromString(await fl.async('string'),'text/html');
+  doc.querySelectorAll('img,image').forEach(e=>{const s=e.getAttribute('src')||e.getAttribute('href')||e.getAttribute('xlink:href');if(s){const q=res(p,s);if(z.file(q)&&!imgs.includes(q))imgs.push(q)}});
+  text+=(doc.body?doc.body.textContent:'')+'\n'}
+ if(imgs.length){const out=[];for(let i=0;i<imgs.length;i++){out.push(await page(await z.file(imgs[i]).async('blob')));prog(i/imgs.length*.6)}return out}
+ return textPages(text)}
+async function readPDF(f){const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;const out=[];
+ for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i);const vp=pg.getViewport({scale:1.6});const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
+  await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;out.push({blob:await toCanvasBlob(cv),w:cv.width,h:cv.height});prog(i/pdf.numPages*.6)}return out}
+
+// writers
+const dataURL=b=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b)});
+async function writePDF(pgs){const{jsPDF}=window.jspdf;let doc;
+ for(let i=0;i<pgs.length;i++){const p=pgs[i],o=p.w>p.h?'l':'p';if(i===0)doc=new jsPDF({unit:'px',format:[p.w,p.h],orientation:o,hotfixes:['px_scaling']});else doc.addPage([p.w,p.h],o);
+  doc.addImage(await dataURL(p.blob),'JPEG',0,0,p.w,p.h);prog(.6+i/pgs.length*.4)}return doc.output('blob')}
+async function writeCBZ(pgs){const z=new JSZip();pgs.forEach((p,i)=>z.file(String(i+1).padStart(4,'0')+'.jpg',p.blob));return z.generateAsync({type:'blob',mimeType:'application/vnd.comicbook+zip'},m=>prog(.6+m.percent/250))}
+async function writeEPUB(pgs,title){const z=new JSZip();z.file('mimetype','application/epub+zip',{compression:'STORE'});
+ z.file('META-INF/container.xml','<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles></container>');
+ let man='',spine='';const xh=b=>`<?xml version="1.0" encoding="utf-8"?><html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops"><head><title>${title}</title><meta name="viewport" content="width=${pgs[0].w},height=${pgs[0].h}"/></head><body style="margin:0">${b}</body></html>`;
+ pgs.forEach((p,i)=>{const n=String(i+1).padStart(4,'0');z.file(`OEBPS/img${n}.jpg`,p.blob);
+  z.file(`OEBPS/p${n}.xhtml`,xh(`<img src="img${n}.jpg" alt="" style="width:100%;height:auto"/>`));
+  man+=`<item id="i${n}" href="img${n}.jpg" media-type="image/jpeg"${i?'':' properties="cover-image"'}/><item id="p${n}" href="p${n}.xhtml" media-type="application/xhtml+xml"/>`;spine+=`<itemref idref="p${n}"/>`});
+ z.file('OEBPS/nav.xhtml',xh('<nav epub:type="toc"><ol><li><a href="p0001.xhtml">Start</a></li></ol></nav>'));
+ z.file('OEBPS/content.opf',`<?xml version="1.0" encoding="utf-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="id" prefix="rendition: http://www.idpf.org/vocab/rendition/#"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="id">urn:uuid:${crypto.randomUUID()}</dc:identifier><dc:title>${title}</dc:title><dc:language>en</dc:language><meta property="dcterms:modified">${new Date().toISOString().slice(0,19)}Z</meta><meta property="rendition:layout">pre-paginated</meta></metadata><manifest><item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>${man}</manifest><spine>${spine}</spine></package>`);
+ return z.generateAsync({type:'blob',mimeType:'application/epub+zip',compression:'DEFLATE'},m=>prog(.6+m.percent/250))}
+
+// run
+go.onclick=async()=>{go.disabled=true;$('#dl').style.display='none';
+ try{msg('Reading pages…');prog(0);
+  const pgs=await({cbz:readCBZ,epub:readEPUB,pdf:readPDF}[src])(file);
+  if(!pgs.length)throw new Error('No pages found in this file.');
+  msg(`Building ${target.toUpperCase()} from ${pgs.length} pages…`);
+  const base=file.name.replace(/\.[^.]+$/,'').replace(/[<>&]/g,'');
+  const out=await({cbz:p=>writeCBZ(p),epub:p=>writeEPUB(p,base),pdf:p=>writePDF(p)}[target])(pgs);
+  prog(1);const a=$('#dl');a.href=URL.createObjectURL(out);a.download=base+'.'+target;a.style.display='inline-block';a.textContent='Download '+base+'.'+target;msg('Done. Your file is ready.');
+ }catch(e){msg('Something went wrong: '+(e.message||e))}
+ refresh()};
+</script>
+</body>
+</html>
